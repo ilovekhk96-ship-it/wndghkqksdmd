@@ -10,7 +10,6 @@
 <body class="bg-slate-50 min-h-screen p-6">
     <div class="max-w-3xl mx-auto space-y-6">
         
-        <!-- 로그인 영역 -->
         <div id="login-container" class="max-w-md mx-auto bg-white rounded-xl shadow-lg p-8 text-center border border-slate-100 mt-20">
             <h1 class="text-xl font-bold text-slate-800 mb-2">학생용 구글 로그인</h1>
             <p class="text-slate-500 mb-6 text-sm">구글 계정으로 로그인하여 수업 참여를 신청하세요.</p>
@@ -29,7 +28,6 @@
             </div>
         </div>
 
-        <!-- 실험 화면 영역 -->
         <div id="app-container" class="hidden space-y-6">
             <div class="bg-white p-6 rounded-xl shadow-sm border border-slate-200 flex justify-between items-center">
                 <div>
@@ -73,7 +71,7 @@
 
     <script type="module">
         import { initializeApp } from "https://www.gstatic.com/firebasejs/10.8.0/firebase-app.js";
-        import { getAuth, GoogleAuthProvider, signInWithRedirect, getRedirectResult, signOut, onAuthStateChanged } from "https://www.gstatic.com/firebasejs/10.8.0/firebase-auth.js";
+        import { getAuth, GoogleAuthProvider, signInWithPopup, signOut, onAuthStateChanged } from "https://www.gstatic.com/firebasejs/10.8.0/firebase-auth.js";
         import { getFirestore, doc, getDoc, setDoc } from "https://www.gstatic.com/firebasejs/10.8.0/firebase-firestore.js";
 
         const firebaseConfig = {
@@ -104,23 +102,17 @@
             options: { responsive: true, maintainAspectRatio: false }
         });
 
-        // 팝업 차단 없는 안전한 리디렉션 로그인 적용
         document.getElementById("google-login-btn").addEventListener("click", async () => {
             try {
-                await signInWithRedirect(auth, googleProvider);
+                await signInWithPopup(auth, googleProvider);
             } catch (error) {
-                alert("로그인 오류: " + error.message);
+                alert("로그인 중 에러 발생: " + error.message);
             }
         });
 
         const handleLogout = () => signOut(auth);
         document.getElementById("logout-btn-1").addEventListener("click", handleLogout);
         document.getElementById("logout-btn-2").addEventListener("click", handleLogout);
-
-        // 로그인 직후 리디렉션 결과 처리 및 인증 상태 감지 병행
-        getRedirectResult(auth).catch((error) => {
-            console.error("Redirect error:", error);
-        });
 
         onAuthStateChanged(auth, async (user) => {
             const loginContainer = document.getElementById("login-container");
@@ -165,7 +157,7 @@
                     }
                 }
             } catch (err) {
-                console.error("학생 데이터 확인 중 오류:", err);
+                console.error(err);
             }
         });
 
