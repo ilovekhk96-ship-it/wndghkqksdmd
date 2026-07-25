@@ -73,10 +73,9 @@
 
     <script type="module">
         import { initializeApp } from "https://www.gstatic.com/firebasejs/10.8.0/firebase-app.js";
-        import { getAuth, GoogleAuthProvider, signInWithRedirect, getRedirectResult, signOut, onAuthStateChanged } from "https://www.gstatic.com/firebasejs/10.8.0/firebase-auth.js";
+        import { getAuth, GoogleAuthProvider, signInWithPopup, signOut, onAuthStateChanged } from "https://www.gstatic.com/firebasejs/10.8.0/firebase-auth.js";
         import { getFirestore, doc, getDoc, setDoc } from "https://www.gstatic.com/firebasejs/10.8.0/firebase-firestore.js";
 
-        // 학생용 Firebase 설정
         const firebaseConfig = {
             apiKey: "AIzaSyBFLlgEm5nyYSeorOodncoQiEMmmUKc9Ek",
             authDomain: "wndghkqksdmd-2.firebaseapp.com",
@@ -105,9 +104,10 @@
             options: { responsive: true, maintainAspectRatio: false }
         });
 
+        // 팝업 방식으로 즉시 로그인 처리
         document.getElementById("google-login-btn").addEventListener("click", async () => {
             try {
-                await signInWithRedirect(auth, googleProvider);
+                await signInWithPopup(auth, googleProvider);
             } catch (error) {
                 alert("로그인 오류: " + error.message);
             }
@@ -116,8 +116,6 @@
         const handleLogout = () => signOut(auth);
         document.getElementById("logout-btn-1").addEventListener("click", handleLogout);
         document.getElementById("logout-btn-2").addEventListener("click", handleLogout);
-
-        getRedirectResult(auth).catch((error) => console.error(error));
 
         onAuthStateChanged(auth, async (user) => {
             const loginContainer = document.getElementById("login-container");
