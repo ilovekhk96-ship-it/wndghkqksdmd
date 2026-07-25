@@ -10,10 +10,10 @@
 <body class="bg-slate-50 min-h-screen p-6">
     <div class="max-w-3xl mx-auto space-y-6">
         
-        <!-- 로그인 화면 영역 -->
+        <!-- 로그인 영역 -->
         <div id="login-container" class="max-w-md mx-auto bg-white rounded-xl shadow-lg p-8 text-center border border-slate-100 mt-20">
             <h1 class="text-xl font-bold text-slate-800 mb-2">학생용 구글 로그인</h1>
-            <p id="status-text" class="text-slate-500 mb-6 text-sm">구글 계정으로 로그인하여 수업 참여를 신청하세요.</p>
+            <p class="text-slate-500 mb-6 text-sm">구글 계정으로 로그인하여 수업 참여를 신청하세요.</p>
             
             <div id="login-btn-box">
                 <button id="google-login-btn" class="w-full py-3 px-4 bg-indigo-600 hover:bg-indigo-700 text-white font-semibold rounded-lg transition shadow-md">
@@ -29,7 +29,7 @@
             </div>
         </div>
 
-        <!-- 실험 활동 화면 영역 (승인 후 표시) -->
+        <!-- 실험 화면 영역 -->
         <div id="app-container" class="hidden space-y-6">
             <div class="bg-white p-6 rounded-xl shadow-sm border border-slate-200 flex justify-between items-center">
                 <div>
@@ -40,7 +40,6 @@
             </div>
 
             <div class="grid grid-cols-1 md:grid-cols-2 gap-6">
-                <!-- 데이터 입력 카드 -->
                 <div class="bg-white p-6 rounded-xl shadow-sm border border-slate-200 space-y-4">
                     <h2 class="font-bold text-slate-700">데이터 입력</h2>
                     <div>
@@ -54,7 +53,6 @@
                     <button id="add-data-btn" class="w-full py-2.5 bg-indigo-600 hover:bg-indigo-700 text-white font-semibold rounded-lg transition text-sm">측정값 추가하기</button>
                 </div>
 
-                <!-- 그래프 카드 -->
                 <div class="bg-white p-6 rounded-xl shadow-sm border border-slate-200 space-y-4">
                     <h2 class="font-bold text-slate-700">온도 변화 그래프</h2>
                     <div class="relative h-48">
@@ -63,7 +61,6 @@
                 </div>
             </div>
 
-            <!-- 피드백 확인 카드 -->
             <div class="bg-white p-6 rounded-xl shadow-sm border border-slate-200 space-y-2">
                 <h2 class="font-bold text-slate-700">선생님 피드백</h2>
                 <div id="feedback-box" class="p-4 bg-slate-50 rounded-lg text-sm text-slate-600">
@@ -74,11 +71,10 @@
 
     </div>
 
-    <!-- Firebase 및 로직 처리 -->
     <script type="module">
         import { initializeApp } from "https://www.gstatic.com/firebasejs/10.8.0/firebase-app.js";
-        import { getAuth, GoogleAuthProvider, signInWithPopup, signOut, onAuthStateChanged } from "https://www.gstatic.com/firebasejs/10.8.0/firebase-auth.js";
-        import { getFirestore, doc, getDoc, setDoc, updateDoc } from "https://www.gstatic.com/firebasejs/10.8.0/firebase-firestore.js";
+        import { getAuth, GoogleAuthProvider, signInWithRedirect, getRedirectResult, signOut, onAuthStateChanged } from "https://www.gstatic.com/firebasejs/10.8.0/firebase-auth.js";
+        import { getFirestore, doc, getDoc, setDoc } from "https://www.gstatic.com/firebasejs/10.8.0/firebase-firestore.js";
 
         const firebaseConfig = {
             apiKey: "AIzaSyAaM5AWJnW5CX5GccGIOSdhdMICUN8jr8E",
@@ -98,37 +94,32 @@
         let currentUser = null;
         let experimentData = [];
         
-        // 차트 초기화
         const ctx = document.getElementById('tempChart').getContext('2d');
         const chart = new Chart(ctx, {
             type: 'line',
             data: {
                 labels: [],
-                datasets: [{
-                    label: '온도 (°C)',
-                    data: [],
-                    borderColor: 'rgb(79, 70, 229)',
-                    tension: 0.1
-                }]
+                datasets: [{ label: '온도 (°C)', data: [], borderColor: 'rgb(79, 70, 229)', tension: 0.1 }]
             },
             options: { responsive: true, maintainAspectRatio: false }
         });
 
-        // 로그인 버튼 클릭
+        // 리디렉션 방식 로그인 요청
         document.getElementById("google-login-btn").addEventListener("click", async () => {
             try {
-                await signInWithPopup(auth, googleProvider);
+                await signInWithRedirect(auth, googleProvider);
             } catch (error) {
                 alert("로그인 오류: " + error.message);
             }
         });
 
-        // 로그아웃 처리
         const handleLogout = () => signOut(auth);
         document.getElementById("logout-btn-1").addEventListener("click", handleLogout);
         document.getElementById("logout-btn-2").addEventListener("click", handleLogout);
 
-        // 인증 상태 감지 및 데이터 연동
+        // 로그인 복귀 후 결과 처리 및 상태 감지
+        getRedirectResult(auth).catch((error) => console.error(error));
+
         onAuthStateChanged(auth, async (user) => {
             const loginContainer = document.getElementById("login-container");
             const appContainer = document.getElementById("app-container");
@@ -149,7 +140,6 @@
             const userSnap = await getDoc(userRef);
 
             if (!userSnap.exists()) {
-                // 최초 로그인 시 가입 신청 상태로 등록
                 await setDoc(userRef, {
                     email: user.email,
                     name: user.displayName,
@@ -162,20 +152,17 @@
             } else {
                 const data = userSnap.data();
                 if (data.status === "approved") {
-                    // 승인된 학생: 실험 화면 열기
                     loginContainer.classList.add("hidden");
                     appContainer.classList.remove("hidden");
                     document.getElementById("user-info").textContent = `${user.displayName} (${user.email})`;
                     loadStudentData(user.uid);
                 } else {
-                    // 대기 중인 학생
                     loginBtnBox.classList.add("hidden");
                     pendingBox.classList.remove("hidden");
                 }
             }
         });
 
-        // 학생 실험 데이터 불러오기
         async function loadStudentData(uid) {
             const docRef = doc(db, "experiments", uid);
             const docSnap = await getDoc(docRef);
@@ -189,7 +176,6 @@
             }
         }
 
-        // 데이터 추가 버튼
         document.getElementById("add-data-btn").addEventListener("click", async () => {
             const vol = parseFloat(document.getElementById("volume-input").value);
             const temp = parseFloat(document.getElementById("temp-input").value);
