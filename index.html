@@ -71,28 +71,25 @@
 
     </div>
 
-    // Import the functions you need from the SDKs you need
-import { initializeApp } from "firebase/app";
-import { getAnalytics } from "firebase/analytics";
-// TODO: Add SDKs for Firebase products that you want to use
-// https://firebase.google.com/docs/web/setup#available-libraries
+    <script type="module">
+        import { initializeApp } from "https://www.gstatic.com/firebasejs/10.8.0/firebase-app.js";
+        import { getAuth, GoogleAuthProvider, signInWithRedirect, getRedirectResult, signOut, onAuthStateChanged } from "https://www.gstatic.com/firebasejs/10.8.0/firebase-auth.js";
+        import { getFirestore, doc, getDoc, setDoc } from "https://www.gstatic.com/firebasejs/10.8.0/firebase-firestore.js";
 
-// Your web app's Firebase configuration
-// For Firebase JS SDK v7.20.0 and later, measurementId is optional
-const firebaseConfig = {
-  apiKey: "AIzaSyBFLlgEm5nyYSeorOodncoQiEMmmUKc9Ek",
-  authDomain: "wndghkqksdmd-2.firebaseapp.com",
-  projectId: "wndghkqksdmd-2",
-  storageBucket: "wndghkqksdmd-2.firebasestorage.app",
-  messagingSenderId: "893433045696",
-  appId: "1:893433045696:web:a494f58e4b889ab50f0325",
-  measurementId: "G-KTQGGY6PCD"
-};
+        // 학생용 Firebase 설정
+        const firebaseConfig = {
+            apiKey: "AIzaSyBFLlgEm5nyYSeorOodncoQiEMmmUKc9Ek",
+            authDomain: "wndghkqksdmd-2.firebaseapp.com",
+            projectId: "wndghkqksdmd-2",
+            storageBucket: "wndghkqksdmd-2.firebasestorage.app",
+            messagingSenderId: "893433045696",
+            appId: "1:893433045696:web:a494f58e4b889ab50f0325",
+            measurementId: "G-KTQGGY6PCD"
+        };
 
-// Initialize Firebase
-const app = initializeApp(firebaseConfig);
-const analytics = getAnalytics(app);
-  
+        const app = initializeApp(firebaseConfig);
+        const auth = getAuth(app);
+        const db = getFirestore(app);
         const googleProvider = new GoogleAuthProvider();
 
         let currentUser = null;
@@ -108,7 +105,6 @@ const analytics = getAnalytics(app);
             options: { responsive: true, maintainAspectRatio: false }
         });
 
-        // 리디렉션 방식 로그인 요청
         document.getElementById("google-login-btn").addEventListener("click", async () => {
             try {
                 await signInWithRedirect(auth, googleProvider);
@@ -121,7 +117,6 @@ const analytics = getAnalytics(app);
         document.getElementById("logout-btn-1").addEventListener("click", handleLogout);
         document.getElementById("logout-btn-2").addEventListener("click", handleLogout);
 
-        // 로그인 복귀 후 결과 처리 및 상태 감지
         getRedirectResult(auth).catch((error) => console.error(error));
 
         onAuthStateChanged(auth, async (user) => {
