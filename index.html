@@ -73,7 +73,7 @@
 
     <script type="module">
         import { initializeApp } from "https://www.gstatic.com/firebasejs/10.8.0/firebase-app.js";
-        import { getAuth, GoogleAuthProvider, signInWithPopup, signOut, onAuthStateChanged } from "https://www.gstatic.com/firebasejs/10.8.0/firebase-auth.js";
+        import { getAuth, GoogleAuthProvider, signInWithRedirect, getRedirectResult, signOut, onAuthStateChanged } from "https://www.gstatic.com/firebasejs/10.8.0/firebase-auth.js";
         import { getFirestore, doc, getDoc, setDoc } from "https://www.gstatic.com/firebasejs/10.8.0/firebase-firestore.js";
 
         const firebaseConfig = {
@@ -104,10 +104,10 @@
             options: { responsive: true, maintainAspectRatio: false }
         });
 
-        // 팝업 방식으로 즉시 로그인 처리
+        // 팝업 차단 없는 안전한 리디렉션 로그인 적용
         document.getElementById("google-login-btn").addEventListener("click", async () => {
             try {
-                await signInWithPopup(auth, googleProvider);
+                await signInWithRedirect(auth, googleProvider);
             } catch (error) {
                 alert("로그인 오류: " + error.message);
             }
@@ -116,6 +116,11 @@
         const handleLogout = () => signOut(auth);
         document.getElementById("logout-btn-1").addEventListener("click", handleLogout);
         document.getElementById("logout-btn-2").addEventListener("click", handleLogout);
+
+        // 로그인 직후 리디렉션 결과 처리 및 인증 상태 감지 병행
+        getRedirectResult(auth).catch((error) => {
+            console.error("Redirect error:", error);
+        });
 
         onAuthStateChanged(auth, async (user) => {
             const loginContainer = document.getElementById("login-container");
@@ -133,30 +138,34 @@
             }
 
             currentUser = user;
-            const userRef = doc(db, "users", user.uid);
-            const userSnap = await getDoc(userRef);
+            try {
+                const userRef = doc(db, "users", user.uid);
+                const userSnap = await getDoc(userRef);
 
-            if (!userSnap.exists()) {
-                await setDoc(userRef, {
-                    email: user.email,
-                    name: user.displayName,
-                    role: "student",
-                    status: "pending",
-                    createdAt: new Date().toISOString()
-                });
-                loginBtnBox.classList.add("hidden");
-                pendingBox.classList.remove("hidden");
-            } else {
-                const data = userSnap.data();
-                if (data.status === "approved") {
-                    loginContainer.classList.add("hidden");
-                    appContainer.classList.remove("hidden");
-                    document.getElementById("user-info").textContent = `${user.displayName} (${user.email})`;
-                    loadStudentData(user.uid);
-                } else {
+                if (!userSnap.exists()) {
+                    await setDoc(userRef, {
+                        email: user.email,
+                        name: user.displayName,
+                        role: "student",
+                        status: "pending",
+                        createdAt: new Date().toISOString()
+                    });
                     loginBtnBox.classList.add("hidden");
                     pendingBox.classList.remove("hidden");
+                } else {
+                    const data = userSnap.data();
+                    if (data.status === "approved") {
+                        loginContainer.classList.add("hidden");
+                        appContainer.classList.remove("hidden");
+                        document.getElementById("user-info").textContent = `${user.displayName} (${user.email})`;
+                        loadStudentData(user.uid);
+                    } else {
+                        loginBtnBox.classList.add("hidden");
+                        pendingBox.classList.remove("hidden");
+                    }
                 }
+            } catch (err) {
+                console.error("학생 데이터 확인 중 오류:", err);
             }
         });
 
