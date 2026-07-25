@@ -71,24 +71,28 @@
 
     </div>
 
-    <script type="module">
-        import { initializeApp } from "https://www.gstatic.com/firebasejs/10.8.0/firebase-app.js";
-        import { getAuth, GoogleAuthProvider, signInWithRedirect, getRedirectResult, signOut, onAuthStateChanged } from "https://www.gstatic.com/firebasejs/10.8.0/firebase-auth.js";
-        import { getFirestore, doc, getDoc, setDoc } from "https://www.gstatic.com/firebasejs/10.8.0/firebase-firestore.js";
+    // Import the functions you need from the SDKs you need
+import { initializeApp } from "firebase/app";
+import { getAnalytics } from "firebase/analytics";
+// TODO: Add SDKs for Firebase products that you want to use
+// https://firebase.google.com/docs/web/setup#available-libraries
 
-        const firebaseConfig = {
-            apiKey: "AIzaSyAaM5AWJnW5CX5GccGIOSdhdMICUN8jr8E",
-            authDomain: "hwangyung.firebaseapp.com",
-            projectId: "hwangyung",
-            storageBucket: "hwangyung.firebasestorage.app",
-            messagingSenderId: "560973293174",
-            appId: "1:560973293174:web:eb4e938aaa459669356157",
-            measurementId: "G-PTJFPZKV9T"
-        };
+// Your web app's Firebase configuration
+// For Firebase JS SDK v7.20.0 and later, measurementId is optional
+const firebaseConfig = {
+  apiKey: "AIzaSyBFLlgEm5nyYSeorOodncoQiEMmmUKc9Ek",
+  authDomain: "wndghkqksdmd-2.firebaseapp.com",
+  projectId: "wndghkqksdmd-2",
+  storageBucket: "wndghkqksdmd-2.firebasestorage.app",
+  messagingSenderId: "893433045696",
+  appId: "1:893433045696:web:a494f58e4b889ab50f0325",
+  measurementId: "G-KTQGGY6PCD"
+};
 
-        const app = initializeApp(firebaseConfig);
-        const auth = getAuth(app);
-        const db = getFirestore(app);
+// Initialize Firebase
+const app = initializeApp(firebaseConfig);
+const analytics = getAnalytics(app);
+  
         const googleProvider = new GoogleAuthProvider();
 
         let currentUser = null;
