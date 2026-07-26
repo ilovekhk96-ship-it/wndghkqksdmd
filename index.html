@@ -10,6 +10,7 @@
 <body class="bg-slate-50 min-h-screen p-6">
     <div class="max-w-3xl mx-auto space-y-6">
         
+        <!-- 로그인 영역 -->
         <div id="login-container" class="max-w-md mx-auto bg-white rounded-xl shadow-lg p-8 text-center border border-slate-100 mt-20">
             <h1 class="text-xl font-bold text-slate-800 mb-2">학생용 구글 로그인</h1>
             <p class="text-slate-500 mb-6 text-sm">구글 계정으로 로그인하여 수업 참여를 신청하세요.</p>
@@ -28,6 +29,7 @@
             </div>
         </div>
 
+        <!-- 실험 화면 영역 -->
         <div id="app-container" class="hidden space-y-6">
             <div class="bg-white p-6 rounded-xl shadow-sm border border-slate-200 flex justify-between items-center">
                 <div>
@@ -57,6 +59,17 @@
                         <canvas id="tempChart"></canvas>
                     </div>
                 </div>
+            </div>
+
+            <!-- 명시적인 최종 제출 및 피드백 영역 -->
+            <div class="bg-white p-6 rounded-xl shadow-sm border border-slate-200 space-y-4">
+                <div class="flex justify-between items-center">
+                    <h2 class="font-bold text-slate-700">실험 최종 제출</h2>
+                    <button id="final-submit-btn" class="px-4 py-2 bg-emerald-600 hover:bg-emerald-700 text-white font-semibold rounded-lg transition text-xs shadow-sm">
+                        선생님께 최종 제출하기
+                    </button>
+                </div>
+                <p class="text-xs text-slate-400">데이터를 추가한 뒤 '최종 제출하기'를 누르면 선생님 대시보드에 제출 상태가 반영됩니다.</p>
             </div>
 
             <div class="bg-white p-6 rounded-xl shadow-sm border border-slate-200 space-y-2">
@@ -157,23 +170,28 @@
                     }
                 }
             } catch (err) {
-                console.error(err);
+                console.error("데이터베이스 연결 오류:", err);
             }
         });
 
         async function loadStudentData(uid) {
-            const docRef = doc(db, "experiments", uid);
-            const docSnap = await getDoc(docRef);
-            if (docSnap.exists()) {
-                const data = docSnap.data();
-                experimentData = data.records || [];
-                updateChart();
-                if (data.feedback) {
-                    document.getElementById("feedback-box").textContent = data.feedback;
+            try {
+                const docRef = doc(db, "experiments", uid);
+                const docSnap = await getDoc(docRef);
+                if (docSnap.exists()) {
+                    const data = docSnap.data();
+                    experimentData = data.records || [];
+                    updateChart();
+                    if (data.feedback) {
+                        document.getElementById("feedback-box").textContent = data.feedback;
+                    }
                 }
+            } catch (e) {
+                console.error(e);
             }
         }
 
+        // 측정값 추가 시 자동 임시 저장
         document.getElementById("add-data-btn").addEventListener("click", async () => {
             const vol = parseFloat(document.getElementById("volume-input").value);
             const temp = parseFloat(document.getElementById("temp-input").value);
@@ -186,18 +204,48 @@
             experimentData.push({ volume: vol, temperature: temp });
             experimentData.sort((a, b) => a.volume - b.volume);
 
-            const docRef = doc(db, "experiments", currentUser.uid);
-            await setDoc(docRef, {
-                studentId: currentUser.uid,
-                studentName: currentUser.displayName,
-                studentEmail: currentUser.email,
-                records: experimentData,
-                updatedAt: new Date().toISOString()
-            }, { merge: true });
+            try {
+                const docRef = doc(db, "experiments", currentUser.uid);
+                await setDoc(docRef, {
+                    studentId: currentUser.uid,
+                    studentName: currentUser.displayName,
+                    studentEmail: currentUser.email,
+                    records: experimentData,
+                    submitted: false,
+                    updatedAt: new Date().toISOString()
+                }, { merge: true });
 
-            updateChart();
-            document.getElementById("volume-input").value = "";
-            document.getElementById("temp-input").value = "";
+                updateChart();
+                document.getElementById("volume-input").value = "";
+                document.getElementById("temp-input").value = "";
+                alert("측정값이 추가되었습니다.");
+            } catch (e) {
+                alert("저장 중 오류 발생: " + e.message);
+            }
+        });
+
+        // 명시적인 최종 제출 버튼 기능
+        document.getElementById("final-submit-btn").addEventListener("click", async () => {
+            if (experimentData.length === 0) {
+                alert("제출할 실험 데이터가 없습니다. 측정값을 먼저 추가해 주세요.");
+                return;
+            }
+
+            try {
+                const docRef = doc(db, "experiments", currentUser.uid);
+                await setDoc(docRef, {
+                    studentId: currentUser.uid,
+                    studentName: currentUser.displayName,
+                    studentEmail: currentUser.email,
+                    records: experimentData,
+                    submitted: true,
+                    submittedAt: new Date().toISOString()
+                }, { merge: true });
+
+                alert("선생님께 실험 결과가 성공적으로 최종 제출되었습니다!");
+            } catch (e) {
+                alert("제출 중 오류가 발생했습니다: " + e.message);
+            }
         });
 
         function updateChart() {
